@@ -72,7 +72,6 @@ contract Marketplace is ReentrancyGuard {
     }
 
     // MAIN FUNCTIONS
-
     /**
      * @notice List your NFT on the marketplace
      * @param contractAddress: Address of the NFT contract
@@ -96,6 +95,11 @@ contract Marketplace is ReentrancyGuard {
         emit ItemListed(msg.sender, contractAddress, tokenId, price);
     }
 
+    /**
+     * @notice Buy an NFT on the marketplace
+     * @param contractAddress: Address of the NFT contract
+     * @param tokenId: TokenId of the NFT
+     */
     function buyItem(address contractAddress, uint256 tokenId)
         external
         payable
@@ -113,6 +117,11 @@ contract Marketplace is ReentrancyGuard {
         emit ItemBought(msg.sender, contractAddress, tokenId, listing.price);
     }
 
+    /**
+     * @notice Cancel NFT listing on the marketplace
+     * @param contractAddress: Address of the NFT contract
+     * @param tokenId: TokenId of the owned NFT
+     */
     function cancelListing(address contractAddress, uint256 tokenId)
         external
         isOwner(contractAddress, tokenId, msg.sender)
@@ -122,6 +131,12 @@ contract Marketplace is ReentrancyGuard {
         emit ItemCancelled(msg.sender, contractAddress, tokenId);
     }
 
+    /**
+     * @notice Update your NFT listing on the marketplace
+     * @param contractAddress: Address of the NFT contract
+     * @param tokenId: TokenId of the owned NFT
+     * @param newPrice: New price the NFT is sold at
+     */
     function updateListing(
         address contractAddress,
         uint256 tokenId,
@@ -131,6 +146,9 @@ contract Marketplace is ReentrancyGuard {
         emit ItemListed(msg.sender, contractAddress, tokenId, newPrice);
     }
 
+    /**
+     * @notice Withdraw all proceeds accumulated on the marketplace
+     */
     function withdrawProceeds() external {
         uint256 proceeds = s_proceeds[msg.sender];
         if (proceeds <= 0) revert Marketplace__NoProceeds();
@@ -138,5 +156,18 @@ contract Marketplace is ReentrancyGuard {
         s_proceeds[msg.sender] = 0;
         (bool success, ) = payable(msg.sender).call{value: proceeds}("");
         if (!success) revert Marketplace__TransferFailed();
+    }
+
+    // GETTER FUNCTIONS
+    function getListing(address contractAddress, uint256 tokenId)
+        external
+        view
+        returns (Listing memory)
+    {
+        return s_listings[contractAddress][tokenId];
+    }
+
+    function getProceeds(address seller) external view returns (uint256) {
+        return s_proceeds[seller];
     }
 }
