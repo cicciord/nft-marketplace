@@ -10,6 +10,8 @@ error Marketplace__AlreadyListed(address contractAddress, uint256 tokenId);
 error Marketplace__NotOwner();
 error Marketplace__NotListed(address contractAddress, uint256 tokenId);
 error Marketplace__NotEnoughEth(address contractAddress, uint256 tokenId, uint256 price);
+error Marketplace__NoProceeds();
+error Marketplace__TransferFailed();
 
 contract Marketplace is ReentrancyGuard {
     constructor() {}
@@ -127,5 +129,14 @@ contract Marketplace is ReentrancyGuard {
     ) external isListed(contractAddress, tokenId) isOwner(contractAddress, tokenId, msg.sender) {
         s_listings[contractAddress][tokenId].price = newPrice;
         emit ItemListed(msg.sender, contractAddress, tokenId, newPrice);
+    }
+
+    function withdrawProceeds() external {
+        uint256 proceeds = s_proceeds[msg.sender];
+        if (proceeds <= 0) revert Marketplace__NoProceeds();
+
+        s_proceeds[msg.sender] = 0;
+        (bool success, ) = payable(msg.sender).call{value: proceeds}("");
+        if (!success) revert Marketplace__TransferFailed();
     }
 }
