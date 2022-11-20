@@ -119,4 +119,13 @@ contract Marketplace is ReentrancyGuard {
         delete (s_listings[contractAddress][tokenId]);
         emit ItemCancelled(msg.sender, contractAddress, tokenId);
     }
+
+    function updateListing(
+        address contractAddress,
+        uint256 tokenId,
+        uint256 newPrice
+    ) external isListed(contractAddress, tokenId) isOwner(contractAddress, tokenId, msg.sender) {
+        s_listings[contractAddress][tokenId].price = newPrice;
+        emit ItemListed(msg.sender, contractAddress, tokenId, newPrice);
+    }
 }
