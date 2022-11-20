@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 error Marketplace__PriceLowerThanZero();
 error Marketplace__NotApproved();
@@ -10,7 +11,7 @@ error Marketplace__NotOwner();
 error Marketplace__NotListed(address contractAddress, uint256 tokenId);
 error Marketplace__NotEnoughEth(address contractAddress, uint256 tokenId, uint256 price);
 
-contract Marketplace {
+contract Marketplace is ReentrancyGuard {
     constructor() {}
 
     // TYPES DECLARATION
@@ -33,6 +34,8 @@ contract Marketplace {
         uint256 indexed tokenId,
         uint256 price
     );
+
+    event ItemCancelled(address indexed seller, address indexed contractAddress, uint256 tokenId);
 
     // STATE VARIABLES
     mapping(address => mapping(uint256 => Listing)) private s_listings; // contract => id => listing(price, seller)
@@ -91,13 +94,29 @@ contract Marketplace {
         emit ItemListed(msg.sender, contractAddress, tokenId, price);
     }
 
-    function buyItem(address contractAddress, uint256 tokenId) external payable {
+    function buyItem(address contractAddress, uint256 tokenId)
+        external
+        payable
+        nonReentrant
+        isListed(contractAddress, tokenId)
+    {
         Listing memory listing = s_listings[contractAddress][tokenId];
         if (msg.value < listing.price)
             revert Marketplace__NotEnoughEth(contractAddress, tokenId, listing.price);
+
         s_proceeds[listing.seller] = s_proceeds[listing.seller] + msg.value;
         delete (s_listings[contractAddress][tokenId]);
+
         IERC721(contractAddress).safeTransferFrom(listing.seller, msg.sender, tokenId);
         emit ItemBought(msg.sender, contractAddress, tokenId, listing.price);
+    }
+
+    function cancelListing(address contractAddress, uint256 tokenId)
+        external
+        isOwner(contractAddress, tokenId, msg.sender)
+        isListed(contractAddress, tokenId)
+    {
+        delete (s_listings[contractAddress][tokenId]);
+        emit ItemCancelled(msg.sender, contractAddress, tokenId);
     }
 }
