@@ -14,10 +14,12 @@ const networkConfig = {
 }
 
 const developmentChains = ["hardhat", "localhost"]
+const testChains = ["goerli"]
 const VERIFICATION_BLOCK_CONFIRMATIONS = 6
 
 module.exports = {
     networkConfig,
     developmentChains,
+    testChains,
     VERIFICATION_BLOCK_CONFIRMATIONS,
 }
